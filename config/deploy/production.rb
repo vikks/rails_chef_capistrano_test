@@ -4,10 +4,6 @@
 # is considered to be the first unless any hosts have the primary
 # property set.  Don't declare `role :all`, it's a meta role.
 
-role :app, %w{deploy@example.com}
-role :web, %w{deploy@example.com}
-role :db,  %w{deploy@example.com}
-
 
 # Extended Server Syntax
 # ======================
@@ -15,8 +11,17 @@ role :db,  %w{deploy@example.com}
 # server list. The second argument is a, or duck-types, Hash and is
 # used to set extended properties on the server.
 
-server 'example.com', user: 'deploy', roles: %w{web app}, my_property: :my_value
+set :user, -> { 'bob'}
+set :rails_env, :production
+server '128.199.253.22', user: "#{fetch(:user)}", roles: %w{web app db}, primary: :true
 
+set :bundle_cmd, 'source $HOME/.bash_profile && bundle'
+set :bundle_gemfile, -> { release_path.join('Gemfile')}
+set :bundle_dir,     -> { shared_path.join('bundle')  }
+set :bundle_flags,    '--deployment' # "--deployment --quiet"
+set :bundle_without, %w{ development test}.join(' ')
+set :bundle_binstubs, -> { shared_path.join('bin')}
+set :bundle_roles, :all
 
 # Custom SSH Options
 # ==================
@@ -25,11 +30,12 @@ server 'example.com', user: 'deploy', roles: %w{web app}, my_property: :my_value
 #
 # Global options
 # --------------
-#  set :ssh_options, {
-#    keys: %w(/home/rlisowski/.ssh/id_rsa),
-#    forward_agent: false,
-#    auth_methods: %w(password)
-#  }
+fetch(:default_env).merge!(rails_env: :production)
+set :ssh_options, {
+   keys: %w(~/.ssh/id_rsa),
+   forward_agent: true,
+   port: 22
+   }
 #
 # And/or per server (overrides global)
 # ------------------------------------
